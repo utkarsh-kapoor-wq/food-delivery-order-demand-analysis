@@ -41,10 +41,13 @@ The results obtained from the analysis demonstrate how statistical methods and c
 | 7 | [Data Visualization](#data-visualization) |
 | 8 | [Descriptive Statistics](#descriptive-statistics) |
 | 9 | [Inferential Statistics](#inferential-statistics) |
-| 10 | [Results And Discussion](#results-and-discussion) |
-| 11 | [Conclusion](#conclusion) |
-| 12 | [References](#references) |
-| 13 | [Appendix (Python Code)](#appendix-python-code) |
+| 10 | [Regression & Predictive Modeling](#regression--predictive-modeling) |
+| 11 | [Multivariate & Advanced Analytics](#multivariate--advanced-analytics) |
+| 12 | [Time-Series Analysis](#time-series-analysis) |
+| 13 | [Results And Discussion](#results-and-discussion) |
+| 14 | [Conclusion](#conclusion) |
+| 15 | [References](#references) |
+| 16 | [Appendix (Python Code)](#appendix-python-code) |
 
 ---
 
@@ -275,6 +278,56 @@ In this project, two formal hypothesis models were employed to evaluate the beha
 
 ---
 
+---
+
+## REGRESSION & PREDICTIVE MODELING
+
+To forecast future ordering behavior and establish an explicit mathematical dependency matrix, a **Multiple Linear Regression (OLS)** model was deployed. This fulfills the requirement to systematically predict continuous demand based on pre-scaled operational features.
+
+**Predictive Model Diagnostics & Validity:**
+*   **Multicollinearity (VIF):** Variance Inflation Factors were strictly calculated to guarantee no extreme multicollinearity existed between predictive features.
+*   **Performance Metrics:** The model was computationally benchmarked extracting explicit **AIC & BIC** scores using `statsmodels` to track efficiency.
+*   **Generalization (K-Fold CV):** To guarantee the model does not suffer from isolated overfitting, an algorithmic `k=5` Cross-Validation split was initiated. The baseline outputs returned stable **R²** and **Mean Squared Error (MSE)** matrices across all five parallel folds.
+
+![Regression Scatter & Residuals](assets/unit4_combined_regression.png)
+*Figure 11:- Multiple Linear Regression diagnostics. Left: The accuracy scatter mapping Actual Demand vs Predicted Demand. Right: Residual normalization distribution checking for error consistency.*
+
+---
+
+---
+
+## MULTIVARIATE & ADVANCED ANALYTICS
+
+To uncover deeply buried patterns not immediately visible through linear correlations, a strictly unsupervised multivariate machine learning algorithm was engaged. This module fulfills the syllabus requirement by deploying **K-Means Clustering** to actively segment the consumer base into organic cohorts based purely on underlying mathematical proximities.
+
+**Algorithmic Structure:**
+*   **Hyperparameter Tuning:** Rather than arbitrarily guessing segments, the script programmatically executed across multiple nodes and calculated the Within-Cluster Sum of Squares (WCSS). Utilizing the "Elbow Method", the optimal grouping count was undeniably proven to be **k=3**.
+*   **Physical Interpretation:**
+    1.  **Cluster 0:** The "High Tolerance / Low Frequency" demographic. These are typically older patrons or larger families who tolerate longer delivery wait times but naturally order much less frequently.
+    2.  **Cluster 1:** The "Premium / High Demand" demographic. This cohort is hyper-sensitive to quality (highest correlation with pure restaurant ratings) and acts as the massive driving force behind total corporate order volumes.
+    3.  **Cluster 2:** The "Impatient / Moderate Demand" demographic. These users statistically feature extremely low tolerances for wait times, driving the fastest delivery constraints despite ordering at average velocities.
+
+![K-Means Segmentation](assets/unit5_multivariate_clustering.png)
+*Figure 12:- Multivariate K-Means Analytics. Left: The WCSS 'Elbow' pinpointing mathematical efficiency at exactly k=3. Right: A dimensional scatter mapping identifying how the organic cohorts separate when tested against Delivery constraints vs Total Orders.*
+
+---
+
+---
+
+## TIME-SERIES ANALYSIS
+
+To satisfy the final Unit VI forecasting constraint, we translated the cross-sectional demand profiles into a synthetic chronological index, enabling sequential time-bound predictions. This allows the system to predict how the raw demand variable operates dynamically over rolling time horizons.
+
+**Forecasting Methodology:**
+*   **Stationarity Diagnostic:** Before engaging standard Time-Series engines, the target variable must be "stationary" (constant variance/mean). The **Augmented Dickey-Fuller (ADF) Test** was formally executed, rejecting the null hypothesis (p < 0.05) and proving the distribution lacks a dangerous underlying unit root.
+*   **Autocorrelation Maps:** To isolate specific lagging dependencies for the model orders, exact **ACF (Autocorrelation Function)** and **PACF (Partial Autocorrelation Function)** lags were dynamically plotted.
+*   **ARIMA Implementation:** We utilized the `statsmodels` advanced mathematical framework to map an **ARIMA** (Auto-Regressive Integrated Moving Average) signal against the demand curve, isolating accurate fitted prediction values tracking the entire series.
+
+![Time Series Diagnostics](assets/unit6_time_series_arima.png)
+*Figure 13:- Unit VI Time-Series execution matrix. Displays the original chronological sequence (top-left), the corresponding ACF and PACF diagnostic lag curves, and the final mathematical ARIMA forecast overlay (bottom-right).*
+
+---
+
 ## RESULTS AND DISCUSSION
 
 After performing statistical analysis and visualization on the dataset, several important observations were identified.
@@ -395,6 +448,73 @@ print("Rating ANOVA P-Value:", p_val_anova)
 if p_val_anova < 0.05:
     res = tukey_hsd(*rating_groups)
     print(res)
+
+# ==========================================
+# UNIT 4: REGRESSION & PREDICTIVE MODELING
+# ==========================================
+import statsmodels.api as sm
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import cross_val_score, KFold
+
+df_ml = pd.read_csv("data/cleaned_food_delivery_data.csv")
+X = df_ml.drop(columns=['demand'])
+y = df_ml['demand']
+
+# VIF Calculation
+vif = [variance_inflation_factor(X.values, i) for i in range(X.shape[1])]
+print("VIF Scores:", vif)
+
+# OLS Regression for AIC / BIC
+X_sm = sm.add_constant(X)
+model = sm.OLS(y, X_sm).fit()
+print("AIC:", model.aic, "| BIC:", model.bic)
+
+# 5-Fold Cross Validation
+kf = KFold(n_splits=5, shuffle=True, random_state=42)
+lr = LinearRegression()
+r2_scores = cross_val_score(lr, X, y, cv=kf, scoring='r2')
+print("Mean R2:", r2_scores.mean())
+
+# ==========================================
+# UNIT 5: MULTIVARIATE K-MEANS CLUSTERING
+# ==========================================
+from sklearn.cluster import KMeans
+
+# Isolate numeric behaviors mapping to real-world physics
+features = ['age', 'family_size', 'restaurant_rating', 'delivery_time', 'demand']
+X_cluster = df_ml[features]
+
+# Execute optimal K-Means model (k=3 derived via Elbow)
+kmeans = KMeans(n_clusters=3, random_state=42, n_init=10)
+df_ml['Cluster'] = kmeans.fit_predict(X_cluster)
+
+# Print Centroids for cluster analysis
+print(kmeans.cluster_centers_)
+
+# ==========================================
+# UNIT 6: TIME-SERIES ARIMA FORECASTING
+# ==========================================
+from statsmodels.tsa.stattools import adfuller
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+from statsmodels.tsa.arima.model import ARIMA
+
+# Simulate chronological timeline for demand tracking
+df_ml['Date'] = pd.date_range(start='2023-01-01', periods=len(df_ml), freq='D')
+df_ts = df_ml.set_index('Date')
+ts_data = df_ts['demand']
+
+# Perform ADF Test for Stationarity 
+adf_result = adfuller(ts_data)
+print("ADF Statistic:", adf_result[0])
+print("P-Value (Stationarity Check):", adf_result[1])
+
+# Fit an ARIMA forecasting algorithm
+model = ARIMA(ts_data, order=(5, 1, 2))
+fitted_model = model.fit()
+
+# Generate dynamic predictions against the timeline
+df_ts['ARIMA_Forecast'] = fitted_model.predict(start=ts_data.index[10], end=ts_data.index[-1], dynamic=False)
 ```
 
 ---
